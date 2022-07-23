@@ -1,0 +1,35 @@
+{
+  "dependencies": {
+    "@farmos.org/farmos-map": "^2.0.4"
+  },
+  "devDependencies": {
+    "compression": "^1.7.4",
+    "copy-webpack-plugin": "^11.0.0",
+    "eslint": "^8.20.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "express": "^4.18.1",
+    "html-webpack-plugin": "^5.5.0",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "name": "symmetrical-octo-enigma",
+  "version": "1.0.0",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode=production",
+    "serve-dist": "node ./static-server.js",
+    "lint": "eslint 'src/**'",
+    "fixlint": "npm run lint -- --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@symbioquinegithub.com:symbioquine/symmetrical-octo-enigma.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
