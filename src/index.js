@@ -48,7 +48,7 @@ map.addBehavior("sidePanel").then(() => {
       infoStatsP.appendChild(el('div', {}, div => {
         div.innerHTML = `${label}:`;
         div.appendChild(el('code', {}, facet => {
-          geolocation.on(`change:${facetId}`, evt => facet.innerText = geolocation[`get${capitalizeFirstLetter(facetId)}`]() + ' ' + unit);
+          geolocation.on(`change:${facetId}`, evt => facet.innerText = geolocation[`get${capitalizeFirstLetter(facetId)}`]().toFixed(3) + ' ' + unit);
         }));
       }));
     };

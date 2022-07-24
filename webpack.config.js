@@ -4,8 +4,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const farmOSMapDistDir = `${__dirname}/node_modules/@farmos.org/farmos-map/dist`;
 
-console.log('process.env.NODE_ENV === "production": ', process.env.NODE_ENV, process.env.NODE_ENV === "production")
-
 module.exports = {
   entry: './src/index.js',
   output: {
