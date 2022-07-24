@@ -1,17 +1,23 @@
 {
   "dependencies": {
-    "@farmos.org/farmos-map": "^2.0.4"
+    "@farmos.org/farmos-map": "^2.0.4",
+    "@farmos.org/farmos-olgm": "^1.7.0-farmos2",
+    "farm_map_google": "https://github.com/symbioquine/farm_map_google/tarball/2.x-development",
+    "ol": "^6.14.1"
   },
   "devDependencies": {
     "compression": "^1.7.4",
     "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.7.1",
     "eslint": "^8.20.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
     "express": "^4.18.1",
     "html-webpack-plugin": "^5.5.0",
+    "style-loader": "^3.3.1",
     "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0"
+    "webpack-cli": "^4.10.0",
+    "webpack-dev-server": "^4.9.3"
   },
   "name": "symmetrical-octo-enigma",
   "version": "1.0.0",
@@ -19,7 +25,8 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack --mode=production",
+    "build": "webpack --node-env=production",
+    "dev": "webpack serve $([ -n \"$TEST_PORT_NUM\" ] && echo \"--port $TEST_PORT_NUM\") --mode development",
     "serve-dist": "node ./static-server.js",
     "lint": "eslint 'src/**'",
     "fixlint": "npm run lint -- --fix"

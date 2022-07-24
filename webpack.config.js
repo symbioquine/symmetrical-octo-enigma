@@ -4,6 +4,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const farmOSMapDistDir = `${__dirname}/node_modules/@farmos.org/farmos-map/dist`;
 
+console.log('process.env.NODE_ENV === "production": ', process.env.NODE_ENV, process.env.NODE_ENV === "production")
+
 module.exports = {
   entry: './src/index.js',
   output: {
@@ -11,11 +13,25 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
   },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          { loader: 'style-loader' },
+          { loader: 'css-loader' },
+        ],
+      },
+    ],
+  },
   plugins: [
     new HtmlWebpackPlugin({
       title: '@Symbioquine\'s farmOS-map Playground',
       template: path.resolve(__dirname, 'src/index.html'),
       minify: false,
+      templateParameters: {
+        'gmapsKeyParam': (process.env.NODE_ENV === "production") ? '&key=AIzaSyB-Eb4CJbRd-S5D2RlKIczSNQuOXe_AHsw' : '',
+      },
     }),
     new CopyWebpackPlugin({
       patterns: [
