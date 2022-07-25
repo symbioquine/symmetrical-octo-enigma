@@ -11,38 +11,69 @@ import 'farm_map_google/src/main.js';
 
 const farmOSMap = new MapInstanceManager();
 
+farmOSMap.behaviors.google = window.farmOS.map.behaviors.google;
+
 const map = farmOSMap.create('farm-map');
 
-setTimeout(() => map.attachBehavior(window.farmOS.map.behaviors.google), 1000);
+const getGeolocationObject = () => {
+  return new Promise((resolve, fail) => {
+    const findGeolocateCtrl = () => map.map.getControls().getArray().find(c => c.element.className.indexOf('ol-geolocate') !== -1);
 
-map.addBehavior("sidePanel").then(() => {
-  const locationDrawingPane = map.sidePanel.definePane({
-    paneId: 'location_drawing',
-    name: 'Location Drawing',
+    let geolocateCtrl = findGeolocateCtrl();
+
+    const awaitActivated = () => {
+      if (geolocateCtrl.element.className.indexOf('active') !== -1) {
+        resolve(geolocateCtrl.geolocation);
+      }
+
+      const attrObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mu => {
+          if (mu.type !== "attributes" || mu.attributeName !== "class") {
+            return;
+          }
+          if (geolocateCtrl.element.className.indexOf('active') !== -1) {
+            attrObserver.disconnect();
+            resolve(geolocateCtrl.geolocation);
+          }
+        });
+      });
+
+      attrObserver.observe(geolocateCtrl.element, { attributes: true });
+    };
+
+    if (geolocateCtrl) {
+      awaitActivated();
+    } else {
+      const onMapAddCtrl = map.map.getControls().on('add', () => {
+        geolocateCtrl = findGeolocateCtrl();
+        if (geolocateCtrl) {
+          map.map.getControls().un('add', onMapAddCtrl.listener);
+          awaitActivated();
+        }
+      });
+    }
+    
+    
+  });
+};
+
+map.addBehavior("sidePanel").then(async () => {
+  const locationInfoPane = map.sidePanel.definePane({
+    paneId: 'location_info',
+    name: 'Location Info',
     icon: '♞',
     weight: 80,
   });
 
-  const geolocation = new Geolocation({
-    trackingOptions: {
-      enableHighAccuracy: true,
-    },
-    projection: map.map.getView().getProjection(),
-  });
-
-  locationDrawingPane.addWidgetElement(el('label', {'for': 'track'}, trackLocationCheckboxLabel => {
-    trackLocationCheckboxLabel.innerHTML = 'track position';
-
-    trackLocationCheckboxLabel.appendChild(el('input', {type: "checkbox", id: "track" }, trackLocationCheckbox => {
-      console.log(trackLocationCheckbox, typeof trackLocationCheckbox.addEventListener);
-      trackLocationCheckbox.addEventListener('change', function () {
-        geolocation.setTracking(this.checked);
-      });
-    }));
-
+  const instructionsWidget = locationInfoPane.addWidgetElement(el('span', {}, instructionsSpan => {
+    instructionsSpan.innerHTML = "First click the geolocate button to see location info here.";
   }));
 
-  locationDrawingPane.addWidgetElement(el('p', { }, infoStatsP => {
+  const geolocation = await getGeolocationObject();
+
+  instructionsWidget.remove();
+
+  locationInfoPane.addWidgetElement(el('p', { }, infoStatsP => {
 
     const defineStatsFacet = (facetId, label, unit) => {
       infoStatsP.appendChild(el('div', {}, div => {
@@ -59,7 +90,7 @@ map.addBehavior("sidePanel").then(() => {
     defineStatsFacet('heading', 'heading', '[rad]');
     defineStatsFacet('speed', 'speed', '[m/s]');
 
-    locationDrawingPane.addWidgetElement(el('div', { id: 'info'}, locationErrorsDiv => {
+    locationInfoPane.addWidgetElement(el('div', { id: 'info'}, locationErrorsDiv => {
       geolocation.on('error', function (error) {
         locationErrorsDiv.innerHTML += error.message;
       });
@@ -100,7 +131,6 @@ map.addBehavior("sidePanel").then(() => {
     }),
   });
 
-  locationDrawingPane.set('active', true);
 });
 
 // Helper to make defining elements easier
