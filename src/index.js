@@ -17,11 +17,13 @@ const farmOSMap = new MapInstanceManager();
 
 farmOSMap.behaviors.google = window.farmOS.map.behaviors.google;
 
-const map = farmOSMap.create('farm-map');
+const map = farmOSMap.create('farm-map', { units: 'us' });
 
 const drawingLayer = map.addLayer('vector');
 
-map.addBehavior('edit', { layer: drawingLayer });
+map.addBehavior('edit', { layer: drawingLayer }).then(() => {
+  map.addBehavior('measure', { layer: drawingLayer });
+});
 
 const getGeolocationObject = () => {
   return new Promise((resolve, fail) => {
@@ -98,6 +100,7 @@ class GeolocationDrawing extends Control {
     }
 
     createControlElement('button', 'singlePointButton', (button) => {
+      // https://materialdesignicons.com/icon/map-marker-plus
       button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M9,11.5A2.5,2.5 0 0,0 11.5,9A2.5,2.5 0 0,0 9,6.5A2.5,2.5 0 0,0 6.5,9A2.5,2.5 0 0,0 9,11.5M9,2C12.86,2 16,5.13 16,9C16,14.25 9,22 9,22C9,22 2,14.25 2,9A7,7 0 0,1 9,2M15,17H18V14H20V17H23V19H20V22H18V19H15V17Z" /></svg>';
       button.title = 'Capture a single point';
       button.type = 'button';
@@ -106,6 +109,7 @@ class GeolocationDrawing extends Control {
     });
 
     createControlElement('button', 'streamPointButton', (button) => {
+      // https://materialdesignicons.com/icon/map-marker-path
       button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M18,15A3,3 0 0,1 21,18A3,3 0 0,1 18,21C16.69,21 15.58,20.17 15.17,19H14V17H15.17C15.58,15.83 16.69,15 18,15M18,17A1,1 0 0,0 17,18A1,1 0 0,0 18,19A1,1 0 0,0 19,18A1,1 0 0,0 18,17M18,8A1.43,1.43 0 0,0 19.43,6.57C19.43,5.78 18.79,5.14 18,5.14C17.21,5.14 16.57,5.78 16.57,6.57A1.43,1.43 0 0,0 18,8M18,2.57A4,4 0 0,1 22,6.57C22,9.56 18,14 18,14C18,14 14,9.56 14,6.57A4,4 0 0,1 18,2.57M8.83,17H10V19H8.83C8.42,20.17 7.31,21 6,21A3,3 0 0,1 3,18C3,16.69 3.83,15.58 5,15.17V14H7V15.17C7.85,15.47 8.53,16.15 8.83,17M6,17A1,1 0 0,0 5,18A1,1 0 0,0 6,19A1,1 0 0,0 7,18A1,1 0 0,0 6,17M6,3A3,3 0 0,1 9,6C9,7.31 8.17,8.42 7,8.83V10H5V8.83C3.83,8.42 3,7.31 3,6A3,3 0 0,1 6,3M6,5A1,1 0 0,0 5,6A1,1 0 0,0 6,7A1,1 0 0,0 7,6A1,1 0 0,0 6,5M11,19V17H13V19H11M7,13H5V11H7V13Z" /></svg>';
       button.title = 'Capture multiple points';
       button.type = 'button';
@@ -113,12 +117,102 @@ class GeolocationDrawing extends Control {
       button.addEventListener('click', this.handleMultiPointCaptureButtonClick.bind(this), false);
     });
 
+    createControlElement('button', 'closeFeatureButton', (button) => {
+      // https://materialdesignicons.com/icon/vector-square-close
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M4 4H6V6H4V4M6 20H4V18H6V20M18 8V16H16V18H8V16H6V8H8V2H2V8H4V16H2V22H8V20H16V22H22V16H20V8H22V2H16V8H18M20 20H18V18H20V20M18 6V4H20V6H18M14 6H10V4H14V6Z" /></svg>';
+      button.title = 'Close current feature';
+      button.type = 'button';
+      button.classList.add('hidden');
+
+      button.addEventListener('click', this.handleCloseFeatureButtonClick.bind(this), false);
+    });
+
     // Get the drawing layer from the options.
     this.layer = options.layer;
   }
 
+  /**
+   * @inheritDoc
+   * @api
+   */
+  setMap(map) {
+    const oldMap = this.getMap();
+    if (map === oldMap) {
+      return;
+    }
+    if (oldMap) {
+      // Cleanup the old event listeners
+      this.clearActiveDrawingListeners();
+      if (this.onMapAddInteraction) {
+        oldMap.getInteractions().un('add', this.onMapAddInteraction.listener);
+        this.onMapAddInteraction = undefined;
+      }
+      if (this.onMapRemoveInteraction) {
+        oldMap.getInteractions().un('remove', this.onMapRemoveInteraction.listener);
+        this.onMapRemoveInteraction = undefined;
+      }
+    }
+    super.setMap(map);
+
+    if (map) {
+      // When interactions are added or removed update our internal state
+      // to track the active drawing interaction/feature - if any
+      const trackDrawingInteractions = () => {
+        const drawingInteraction = map.getInteractions().getArray().find(i => typeof i.finishDrawing === 'function');
+
+        if (this.activeDrawingInteraction) {
+          this.clearActiveDrawingListeners();
+          // TODO
+        }
+
+        this.activeDrawingInteraction = drawingInteraction;
+
+        if (!this.activeDrawingInteraction) {
+          return;
+        }
+
+        this.onDrawStart = this.activeDrawingInteraction.on('drawstart', (drawEvt) => {
+          this.activeDrawingFeature = drawEvt.feature;
+          if (this.activeDrawingFeature.getGeometry().getType() === 'Polygon') {
+            this.innerControlElements.closeFeatureButton.classList.remove('hidden');
+          }
+        });
+        this.onDrawAbort = this.activeDrawingInteraction.on('drawabort', (drawEvt) => {
+          this.activeDrawingFeature = undefined;
+          this.innerControlElements.closeFeatureButton.classList.add('hidden');
+        });
+        this.onDrawEnd = this.activeDrawingInteraction.on('drawend', (drawEvt) => {
+          this.activeDrawingFeature = undefined;
+          this.innerControlElements.closeFeatureButton.classList.add('hidden');
+        });
+      };
+
+      this.onMapAddInteraction = map.getInteractions().on('add', () => trackDrawingInteractions());
+      this.onMapRemoveInteraction = map.getInteractions().on('remove', () => trackDrawingInteractions());
+      trackDrawingInteractions();
+    }
+  }
+
+  clearActiveDrawingListeners() {
+    const clearListener = (eventsKeyAttrName) => {
+      if (this[eventsKeyAttrName]) {
+        this[eventsKeyAttrName].target.un(this[eventsKeyAttrName].type, this[eventsKeyAttrName].listener);
+        this[eventsKeyAttrName] = undefined;
+      }
+    }
+
+    clearListener('onDrawStart');
+    clearListener('onDrawAbort');
+    clearListener('onDrawEnd');
+  }
+
   handleSinglePointCaptureButtonClick() {
-    console.log("Single point capture button clicked!");
+    const isStreamingActive = this.innerControlElements.streamPointButton.classList.contains('active');
+
+    if (isStreamingActive) {
+      this.stopMultiPointCapture({ finishDrawing: false });
+    }
+
     this.captureSinglePoint();
   }
 
@@ -137,26 +231,28 @@ class GeolocationDrawing extends Control {
   }
 
   handleMultiPointCaptureButtonClick() {
-    console.log("Multiple point capture button clicked!");
-
     const isActive = this.innerControlElements.streamPointButton.classList.contains('active');
 
     if (isActive) {
-      this.stopMultiPointCapture();
+      this.stopMultiPointCapture({ finishDrawing: true });
     } else {
       this.startMultiPointCapture();
     }
+  }
+
+  handleCloseFeatureButtonClick() {
+    this.activeDrawingInteraction.finishDrawing();
   }
 
   startMultiPointCapture() {
     this.innerControlElements.streamPointButton.classList.add('active');
 
     this.onPositionChange = this.geolocation.on('change:position', () => {
-      this.captureSinglePoint()
+      this.captureSinglePoint();
     });
   }
 
-  stopMultiPointCapture() {
+  stopMultiPointCapture({ finishDrawing }) {
     this.innerControlElements.streamPointButton.classList.remove('active');
 
     if (this.onPositionChange) {
@@ -167,7 +263,7 @@ class GeolocationDrawing extends Control {
     const drawInteractions = this.getMap().getInteractions().getArray()
       .filter(interaction => typeof interaction.finishDrawing === 'function');
 
-    if (drawInteractions.length) {
+    if (drawInteractions.length && finishDrawing) {
       drawInteractions[0].finishDrawing();
     }
   }

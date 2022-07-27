@@ -12,6 +12,10 @@
   background-color: rgba(255, 204, 51, 0.7);
 }
 
+.ol-geoloc-drawing.ol-control button.hidden {
+  display: none;
+}
+
 .ol-geoloc-drawing.ol-control button svg {
   pointer-events: none;
 }
