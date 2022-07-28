@@ -197,9 +197,7 @@ class GeolocationDrawing extends Control {
   }
 
   handleSinglePointCaptureButtonClick() {
-    const isStreamingActive = this.innerControlElements.streamPointButton.classList.contains('active');
-
-    if (isStreamingActive) {
+    if (this.isStreamingActive()) {
       this.stopMultiPointCapture({ finishDrawing: false });
     }
 
@@ -235,10 +233,12 @@ class GeolocationDrawing extends Control {
     }
   }
 
-  handleMultiPointCaptureButtonClick() {
-    const isActive = this.innerControlElements.streamPointButton.classList.contains('active');
+  isStreamingActive() {
+    return this.innerControlElements.streamPointButton.classList.contains('active');
+  }
 
-    if (isActive) {
+  handleMultiPointCaptureButtonClick() {
+    if (this.isStreamingActive()) {
       this.stopMultiPointCapture({ finishDrawing: true });
     } else {
       this.startMultiPointCapture();
@@ -246,7 +246,11 @@ class GeolocationDrawing extends Control {
   }
 
   handleFinishFeatureButtonClick() {
-    this.activeDrawingInteraction.finishDrawing();
+    if (this.isStreamingActive()) {
+      this.stopMultiPointCapture({ finishDrawing: true });
+    } else {
+      this.activeDrawingInteraction.finishDrawing();
+    }
   }
 
   startMultiPointCapture() {
