@@ -106,14 +106,14 @@ class GeolocationDrawing extends Control {
       button.addEventListener('click', this.handleMultiPointCaptureButtonClick.bind(this), false);
     });
 
-    createControlElement('button', 'closeFeatureButton', (button) => {
-      // https://materialdesignicons.com/icon/vector-square-close
-      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M4 4H6V6H4V4M6 20H4V18H6V20M18 8V16H16V18H8V16H6V8H8V2H2V8H4V16H2V22H8V20H16V22H22V16H20V8H22V2H16V8H18M20 20H18V18H20V20M18 6V4H20V6H18M14 6H10V4H14V6Z" /></svg>';
-      button.title = 'Close current feature';
+    createControlElement('button', 'finishFeatureButton', (button) => {
+      // https://materialdesignicons.com/icon/map-marker-check
+      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M12,2C15.86,2 19,5.14 19,9C19,14.25 12,22 12,22C12,22 5,14.25 5,9C5,5.14 8.14,2 12,2M10.47,14L17,7.41L15.6,6L10.47,11.18L8.4,9.09L7,10.5L10.47,14Z" /></svg>';
+      button.title = 'Finish current feature';
       button.type = 'button';
       button.classList.add('hidden');
 
-      button.addEventListener('click', this.handleCloseFeatureButtonClick.bind(this), false);
+      button.addEventListener('click', this.handleFinishFeatureButtonClick.bind(this), false);
     });
 
     // Get the drawing layer from the options.
@@ -162,17 +162,17 @@ class GeolocationDrawing extends Control {
 
         this.onDrawStart = this.activeDrawingInteraction.on('drawstart', (drawEvt) => {
           this.activeDrawingFeature = drawEvt.feature;
-          if (this.activeDrawingFeature.getGeometry().getType() === 'Polygon') {
-            this.innerControlElements.closeFeatureButton.classList.remove('hidden');
+          if (['Polygon', 'LineString'].includes(this.activeDrawingFeature.getGeometry().getType())) {
+            this.innerControlElements.finishFeatureButton.classList.remove('hidden');
           }
         });
         this.onDrawAbort = this.activeDrawingInteraction.on('drawabort', () => {
           this.activeDrawingFeature = undefined;
-          this.innerControlElements.closeFeatureButton.classList.add('hidden');
+          this.innerControlElements.finishFeatureButton.classList.add('hidden');
         });
         this.onDrawEnd = this.activeDrawingInteraction.on('drawend', () => {
           this.activeDrawingFeature = undefined;
-          this.innerControlElements.closeFeatureButton.classList.add('hidden');
+          this.innerControlElements.finishFeatureButton.classList.add('hidden');
         });
       };
 
@@ -245,7 +245,7 @@ class GeolocationDrawing extends Control {
     }
   }
 
-  handleCloseFeatureButtonClick() {
+  handleFinishFeatureButtonClick() {
     this.activeDrawingInteraction.finishDrawing();
   }
 
