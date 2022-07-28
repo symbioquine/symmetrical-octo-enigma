@@ -28,7 +28,7 @@
     "build": "webpack --node-env=production",
     "dev": "webpack serve $([ -n \"$TEST_PORT_NUM\" ] && echo \"--port $TEST_PORT_NUM\") --mode development",
     "serve-dist": "node ./static-server.js",
-    "lint": "eslint 'src/**'",
+    "lint": "eslint 'src/**.js'",
     "fixlint": "npm run lint -- --fix"
   },
   "repository": {
