@@ -213,6 +213,19 @@ class GeolocationDrawing extends Control {
       this.stopMultiPointCapture({ finishDrawing: false });
     }
 
+    const drawInteractions = this.getMap().getInteractions().getArray()
+      .filter(interaction => typeof interaction.finishDrawing === 'function');
+
+    // If we're not already drawing, then simulate a click on the edit control's "point" button
+    if (!drawInteractions.length) {
+      const editControl = this.getMap().getControls().getArray().find(c => c.element.className.indexOf('ol-edit') !== -1);
+
+      if (editControl) {
+        const evt = new Event('click', { bubbles: true } );
+        editControl.buttons.point.dispatchEvent( evt );
+      }
+    }
+
     this.captureSinglePoint();
   }
 
@@ -246,6 +259,19 @@ class GeolocationDrawing extends Control {
 
   startMultiPointCapture() {
     this.innerControlElements.streamPointButton.classList.add('active');
+
+    const drawInteractions = this.getMap().getInteractions().getArray()
+      .filter(interaction => typeof interaction.finishDrawing === 'function');
+
+    // If we're not already drawing, then simulate a click on the edit control's "polygon" button
+    if (!drawInteractions.length) {
+      const editControl = this.getMap().getControls().getArray().find(c => c.element.className.indexOf('ol-edit') !== -1);
+
+      if (editControl) {
+        const evt = new Event('click', { bubbles: true } );
+        editControl.buttons.polygon.dispatchEvent( evt );
+      }
+    }
 
     this.onPositionChange = this.geolocation.on('change:position', () => {
       this.captureSinglePoint();
