@@ -147,7 +147,8 @@ class GeolocationDrawing extends Control {
       // When interactions are added or removed update our internal state
       // to track the active drawing interaction/feature - if any
       const trackDrawingInteractions = () => {
-        const drawingInteraction = map.getInteractions().getArray().find((i) => typeof i.finishDrawing === 'function');
+        const drawingInteraction = map.getInteractions().getArray()
+          .find((interaction) => typeof interaction.finishDrawing === 'function');
 
         if (this.activeDrawingInteraction) {
           this.clearActiveDrawingListeners();
@@ -201,11 +202,8 @@ class GeolocationDrawing extends Control {
       this.stopMultiPointCapture({ finishDrawing: false });
     }
 
-    const drawInteractions = this.getMap().getInteractions().getArray()
-      .filter((interaction) => typeof interaction.finishDrawing === 'function');
-
     // If we're not already drawing, then simulate a click on the edit control's "point" button
-    if (!drawInteractions.length) {
+    if (!this.activeDrawingInteraction) {
       const editControl = this.getMap().getControls().getArray().find((c) => c.element.className.indexOf('ol-edit') !== -1);
 
       if (editControl) {
@@ -218,17 +216,14 @@ class GeolocationDrawing extends Control {
   }
 
   captureSinglePoint() {
-    const drawInteractions = this.getMap().getInteractions().getArray()
-      .filter((interaction) => typeof interaction.finishDrawing === 'function');
-
     const pos = this.geolocation.getPosition();
 
-    if (drawInteractions.length) {
-      drawInteractions[0].appendCoordinates([pos]);
+    if (this.activeDrawingInteraction) {
+      this.activeDrawingInteraction.appendCoordinates([pos]);
 
       /* eslint-disable no-underscore-dangle */
-      if (drawInteractions[0].mode_ === 'Point') {
-        drawInteractions[0].finishDrawing();
+      if (this.activeDrawingInteraction.mode_ === 'Point') {
+        this.activeDrawingInteraction.finishDrawing();
       }
     }
   }
@@ -256,11 +251,8 @@ class GeolocationDrawing extends Control {
   startMultiPointCapture() {
     this.innerControlElements.streamPointButton.classList.add('active');
 
-    const drawInteractions = this.getMap().getInteractions().getArray()
-      .filter((interaction) => typeof interaction.finishDrawing === 'function');
-
     // If we're not already drawing, then simulate a click on the edit control's "polygon" button
-    if (!drawInteractions.length) {
+    if (!this.activeDrawingInteraction) {
       const editControl = this.getMap().getControls().getArray().find((c) => c.element.className.indexOf('ol-edit') !== -1);
 
       if (editControl) {
@@ -269,6 +261,9 @@ class GeolocationDrawing extends Control {
       }
     }
 
+    // Capture the first (current) point
+    this.captureSinglePoint();
+    // Capture subsequent points
     this.onPositionChange = this.geolocation.on('change:position', () => {
       this.captureSinglePoint();
     });
@@ -282,11 +277,8 @@ class GeolocationDrawing extends Control {
       this.onPositionChange = null;
     }
 
-    const drawInteractions = this.getMap().getInteractions().getArray()
-      .filter((interaction) => typeof interaction.finishDrawing === 'function');
-
-    if (drawInteractions.length && finishDrawing) {
-      drawInteractions[0].finishDrawing();
+    if (this.activeDrawingInteraction && finishDrawing) {
+      this.activeDrawingInteraction.finishDrawing();
     }
   }
 }
